@@ -1,0 +1,50 @@
+<!-- Claim 前端页面（HTML + Ethers.js） -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Claim Page</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h2>🎁 Claim Your Airdrop</h2>
+  <button id="connect">Connect Wallet</button>
+  <p id="status">Not connected</p>
+  <button id="claim" disabled>Claim</button>
+
+  <script>
+    const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS_HERE";
+    const ABI = [
+      "function claim() external",
+      "function hasCollected(address user) view returns (bool)"
+    ];
+
+    let signer;
+    let contract;
+
+    document.getElementById('connect').onclick = async () => {
+      if (!window.ethereum) return alert("Please install MetaMask");
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      const address = await signer.getAddress();
+      document.getElementById("status").innerText = `Connected: ${address}`;
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+      const eligible = await contract.hasCollected(address);
+      document.getElementById("claim").disabled = !eligible;
+    }
+
+    document.getElementById('claim').onclick = async () => {
+      try {
+        const tx = await contract.claim();
+        alert(`Claim tx sent: ${tx.hash}`);
+        await tx.wait();
+        alert("✅ Claim success!");
+      } catch (err) {
+        alert("❌ Claim failed: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
